@@ -11,7 +11,6 @@ module CarrierWave
         @logger = options[:logger]
         @unparsed = options
         @progress = options[:progress]
-        @audio_codec = options[:audio_codec]
         @preserve_aspect_ratio = options[:preserve_aspect_ratio] || :width
 
         @format_options = defaults.merge(options)
@@ -92,6 +91,9 @@ module CarrierWave
               h[:video_codec] = 'libvpx'
               h[:audio_codec] = 'libvorbis'
               h[:custom] = '-b 1500k -ab 160000 -f webm -g 30'
+            when 'mp3'
+              h[:audio_codec] = 'libmp3lame'
+              h[:custom] = '-ab 128k'
             end
           end
         end
