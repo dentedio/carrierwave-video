@@ -77,7 +77,7 @@ module CarrierWave
       private
 
         def defaults
-          @defaults ||= { resolution: @resolution, watermark: {} }.tap do |h|
+          @defaults ||= { }.tap do |h|
             case format
             when 'mp4'
               h[:video_codec] = 'libx264'
