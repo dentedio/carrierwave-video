@@ -11,6 +11,7 @@ module CarrierWave
         @logger = options[:logger]
         @unparsed = options
         @progress = options[:progress]
+        @audio_codec = options[:audio_codec]
         @preserve_aspect_ratio = options[:preserve_aspect_ratio] || :width
 
         @format_options = defaults.merge(options)
