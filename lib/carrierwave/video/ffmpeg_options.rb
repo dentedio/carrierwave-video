@@ -11,7 +11,6 @@ module CarrierWave
         @logger = options[:logger]
         @unparsed = options
         @progress = options[:progress]
-        @preserve_aspect_ratio = options[:preserve_aspect_ratio] || :width
 
         @format_options = defaults.merge(options)
       end
@@ -32,7 +31,7 @@ module CarrierWave
       end
 
       def encoder_options
-        { preserve_aspect_ratio: @preserve_aspect_ratio }
+        { preserve_aspect_ratio: :width }
       end
 
       # input
@@ -44,7 +43,7 @@ module CarrierWave
       def format_params
         params = @format_options.dup
         params.delete(:watermark)
-        params[:custom] = [params[:custom], watermark_params].compact.join(' ')
+        params[:custom] = [params[:custom], watermark_params].flatten
         params
       end
 
@@ -53,7 +52,7 @@ module CarrierWave
       end
 
       def watermark_params
-        return nil unless watermark?
+        return [] unless watermark?
 
         @watermark_params ||= begin
           path = @format_options[:watermark][:path]
@@ -69,28 +68,27 @@ module CarrierWave
                           when 'top_right'
                             "main_w-overlay_w-#{margin}:#{margin}"
                         end
-
-          "-vf \"movie=#{path} [logo]; [in][logo] overlay=#{positioning} [out]\""
+          ["-vf", "\"movie=#{path} [logo]; [in][logo] overlay=#{positioning} [out]\""]
         end
       end
 
       private
 
         def defaults
-          @defaults ||= { resolution: @resolution, watermark: {} }.tap do |h|
+          @defaults ||= { resolution: '640x360', watermark: {} }.tap do |h|
             case format
             when 'mp4'
               h[:video_codec] = 'libx264'
               h[:audio_codec] = 'libfaac'
-              h[:custom] = '-qscale 0 -preset slow -g 30'
+              h[:custom] = %w(-qscale 0 -preset slow -g 30)
             when 'ogv'
               h[:video_codec] = 'libtheora'
               h[:audio_codec] = 'libvorbis'
-              h[:custom] = '-b 1500k -ab 160000 -g 30'
+              h[:custom] = %w(-b 1500k -ab 160000 -g 30)
             when 'webm'
               h[:video_codec] = 'libvpx'
               h[:audio_codec] = 'libvorbis'
-              h[:custom] = '-b 1500k -ab 160000 -f webm -g 30'
+              h[:custom] = %w(-b 1500k -ab 160000 -f webm -g 30)
             end
           end
         end
