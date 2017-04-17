@@ -171,56 +171,55 @@ describe CarrierWave::Video do
       end
     end
 
-    # TODO: consider checking why watermark isn't working
-    # context "with watermark set" do
-    #   before { expect(File).to receive(:rename) }
+    context "with watermark set" do
+      before { expect(File).to receive(:rename) }
 
-    #   it "appends watermark params to custom params for ffmpeg" do
-    #     expect(movie).to receive(:transcode) do |path, opts, codec_opts|
-    #       expect(codec_opts).to eq({preserve_aspect_ratio: :width})
+      it "appends watermark params to custom params for ffmpeg" do
+        expect(movie).to receive(:transcode) do |path, opts, codec_opts|
+          expect(codec_opts).to eq({preserve_aspect_ratio: :width})
 
-    #       expect(opts[:video_codec]).to eq('libvpx')
-    #       expect(opts[:audio_codec]).to eq('libvorbis')
-    #       expect(opts[:custom]).to eq(%w(-b 1500k -ab 160000 -f webm -g 30))
+          expect(opts[:video_codec]).to eq('libvpx')
+          expect(opts[:audio_codec]).to eq('libvorbis')
+          expect(opts[:custom]).to eq(['-b', '1500k', '-ab', '160000', '-f', 'webm', '-g', '30', '-vf', "\"movie=path/to/file.png [logo]; [in][logo] overlay=5:main_h-overlay_h-5 [out]\""])
 
-    #       expect(path).to eq("video/path/tmpfile.#{format}")
-    #     end
+          expect(path).to eq("video/path/tmpfile.#{format}")
+        end
 
-    #     converter.encode_video(format, watermark: {
-    #       path: 'path/to/file.png',
-    #       position: :bottom_left,
-    #       pixels_from_edge: 5
-    #     })
-    #   end
+        converter.encode_video(format, watermark: {
+          path: 'path/to/file.png',
+          position: :bottom_left,
+          pixels_from_edge: 5
+        })
+      end
 
-    #   it "only requires path watermark parameter" do
-    #     expect(movie).to receive(:transcode) do |path, opts, codec_opts|
-    #       expect(codec_opts).to eq({preserve_aspect_ratio: :width})
+      it "only requires path watermark parameter" do
+        expect(movie).to receive(:transcode) do |path, opts, codec_opts|
+          expect(codec_opts).to eq({preserve_aspect_ratio: :width})
 
-    #       expect(opts[:video_codec]).to eq('libvpx')
-    #       expect(opts[:audio_codec]).to eq('libvorbis')
-    #       expect(opts[:custom]).to eq(%w(-b 1500k -ab 160000 -f webm -g 30))
+          expect(opts[:video_codec]).to eq('libvpx')
+          expect(opts[:audio_codec]).to eq('libvorbis')
+          expect(opts[:custom]).to eq(['-b', '1500k', '-ab', '160000', '-f', 'webm', '-g', '30', '-vf', "\"movie=path/to/file.png [logo]; [in][logo] overlay= [out]\""])
 
-    #       expect(path).to eq("video/path/tmpfile.#{format}")
-    #     end
+          expect(path).to eq("video/path/tmpfile.#{format}")
+        end
 
-    #     converter.encode_video(format, watermark: {
-    #       path: 'path/to/file.png'
-    #     })
-    #   end
+        converter.encode_video(format, watermark: {
+          path: 'path/to/file.png'
+        })
+      end
 
-    #   it "removes watermark options from common options" do
-    #     expect(movie).to receive(:transcode) do |path, opts, codec_opts|
-    #       expect(opts).not_to have_key(:watermark)
-    #     end
+      it "removes watermark options from common options" do
+        expect(movie).to receive(:transcode) do |path, opts, codec_opts|
+          expect(opts).not_to have_key(:watermark)
+        end
 
-    #     converter.encode_video(format, watermark: {
-    #       path: 'path/to/file.png',
-    #       position: :bottom_left,
-    #       pixels_from_edge: 5
-    #     })
-    #   end
-    # end
+        converter.encode_video(format, watermark: {
+          path: 'path/to/file.png',
+          position: :bottom_left,
+          pixels_from_edge: 5
+        })
+      end
+    end
 
     context "with resolution set to :same" do
       before do
@@ -244,18 +243,18 @@ describe CarrierWave::Video do
 
       it "takes the provided custom param" do
         expect(movie).to receive(:transcode) do |path, opts, codec_opts|
-          expect(opts[:custom]).to eq('-preset slow') # a la changes in ffmpeg 0.11.1
+          expect(opts[:custom]).to eq(%w(-preset slow)) # a la changes in ffmpeg 0.11.1
         end
 
-        converter.encode_video(format, custom: '-preset slow')
+        converter.encode_video(format, custom: %w(-preset slow))
       end
 
       it "maintains the watermark params" do
         expect(movie).to receive(:transcode) do |path, opts, codec_opts|
-          expect(opts[:custom]).to eq('-preset slow')
+          expect(opts[:custom]).to eq(['-preset', 'slow', '-vf', "\"movie=path/to/file.png [logo]; [in][logo] overlay= [out]\""])
         end
 
-        converter.encode_video(format, custom: '-preset slow', watermark: {
+        converter.encode_video(format, custom: %w(-preset slow), watermark: {
           path: 'path/to/file.png'
         })
       end
@@ -264,7 +263,7 @@ describe CarrierWave::Video do
     context "given a block" do
       let(:movie) { double }
       let(:opts) { {} }
-      let(:params) { { video_codec: "libvpx", audio_codec: "libvorbis", custom: %w(-b 1500k -ab 160000 -f webm -g 30) } }
+      let(:params) { { resolution: "640x360", watermark: {}, video_codec: "libvpx", audio_codec: "libvorbis", custom: %w(-b 1500k -ab 160000 -f webm -g 30) } }
 
       before do
         expect(File).to receive(:rename)
@@ -283,10 +282,10 @@ describe CarrierWave::Video do
       end
 
       it "allows the block to modify the params" do
-        block = Proc.new { |input, params| params[:custom] = '-preset slow' }
+        block = Proc.new { |input, params| params[:custom] = %w(-preset slow) }
 
         expect(movie).to receive(:transcode) do |path, format_opts, codec_opts|
-          expect(format_opts[:custom]).to eq('-preset slow')
+          expect(format_opts[:custom]).to eq(%w(-preset slow))
         end
 
         converter.encode_video(format, opts, &block)
@@ -294,12 +293,13 @@ describe CarrierWave::Video do
 
       it "evaluates the final params after any modifications" do
         block = Proc.new do |input, params|
-          params[:custom] = '-preset slow'
-          # params[:watermark][:path] = 'customized/path'
+
+          params[:custom] = %w(-preset slow)
+          params[:watermark][:path] = 'customized/path'
         end
 
         expect(movie).to receive(:transcode) do |path, format_opts, codec_opts|
-          expect(format_opts[:custom]).to eq('-preset slow')
+          expect(format_opts[:custom]).to eq(['-preset', 'slow', '-vf', "\"movie=customized/path [logo]; [in][logo] overlay= [out]\""])
         end
 
         converter.encode_video(format, opts, &block)
